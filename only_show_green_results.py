@@ -1,15 +1,13 @@
-'''
- SPDX-License-Identifier: AGPL-3.0-or-later
-'''
+# SPDX-License-Identifier: AGPL-3.0-or-later
+"""Only show green hosted results"""
+
+import os
+import logging
+import sqlite3
+import requests
 
 from flask_babel import gettext
-import re
-from searx.url_utils import urlunparse, parse_qsl, urlencode
-import requests
-import logging
-import os
 
-import sqlite3
 try:
     from urllib.parse import urlparse
 except ImportError:
@@ -23,65 +21,68 @@ default_on = False
 preference_section = 'privacy'
 allow_api_connections = True
 database_name = "url2green.db"
+api_server = "https://api.thegreenwebfoundation.org"
 
 
 class GreenCheck:
+    """Implement methods to check if a domain is part of the Green WEB"""
 
     def __init__(self):
+        self.db = True  # pylint: disable=invalid-name
+
         try:
             self.db = bool(os.stat(database_name))
-            logger.debug(("Database found at {}. Using it for lookups "
-                          "instead of the Greencheck API".format(database_name)))
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             self.db = False
-            if allow_api_connections:
-                logger.debug("No database found at {}.".format(database_name))
-                logger.debug(
-                    ("Falling back to the instead of the Greencheck API, as ",
-                     "'allow_api_connections' is set to {}.".format(allow_api_connections))
-                )
-            else:
-                logger.debug(
-                    ("No database found at {database_name}. Not making any checks ".format(database_name),
-                     "because 'allow_api_connections' is set to {}".format(allow_api_connections))
-                )
+
+        if self.db:
+            logger.debug(
+                "Database found at %s. Using it for lookups instead of the Greencheck API",
+                database_name)
+            return
+
+        logger.debug("No database found at %s.", database_name)
+        if allow_api_connections:
+            logger.debug(
+                "Falling back to the the Greencheck API, as 'allow_api_connections' is set to %s.",
+                allow_api_connections)
+        else:
+            logger.debug(
+                "filtering inactive: no database found at %s and 'allow_api_connections=%s'",
+                database_name, allow_api_connections)
 
     def check_url(self, url=None):
-        """
-        Check a url passed in, and return a true or false result,
-        based on whether the domain is marked as a one running on
-        green energy.
-        """
-        try:
-            parsed_domain = self.get_domain_from_url(url)
-        except Exception as e:
-            logger.exception("unable to parse url: {}".format(url))
+        """Check a url passed in, and return a true or false result, based on whether
+        the domain is marked as a one running on green energy."""
+        logger.debug(url)
+
+        parsed_domain = urlparse(url).hostname
+        ret_val = False
 
         if parsed_domain:
-            logger.debug("Checking {}, parsed from {}".format(parsed_domain, url))
-
+            logger.debug("Checking %s, parsed from %s", parsed_domain, url)
             if self.db:
-                return self.check_in_db(parsed_domain)
-            else:
-                if allow_api_connections:
-                    return self.check_against_api(parsed_domain)
-                else:
-                    return False
+                ret_val = self.check_in_db(parsed_domain)
+            elif allow_api_connections:
+                ret_val = self.check_against_api(parsed_domain)
 
-    def get_domain_from_url(self, url=None):
-        return urlparse(url).hostname
+        return ret_val
 
-    def check_in_db(self, domain=None):
+    def check_in_db(self, domain=None):  # pylint: disable=no-self-use
+        """Checks wether ``domain`` is in the green database
 
-        # we basically treat the the sqlite database like an immutable,
-        # read-only datastructure. This allows multiple concurrent
-        # connections as no state is ever being changed - only read with SELECT
-        #  https://docs.python.org/3.8/library/sqlite3.html#//apple_ref/Function/sqlite3.connect
-        # https://sqlite.org/lockingv3.html
+        We basically treat the the sqlite database like an immutable, read-only
+        datastructure.  This allows multiple concurrent connections as no state
+        is ever being changed - only read with SELECT
+
+        - https://docs.python.org/3.8/library/sqlite3.html#//apple_ref/Function/sqlite3.connect
+        - https://sqlite.org/lockingv3.html
+
+        """
         with sqlite3.connect(
-            "file:{}?mode=ro".format(database_name),
-            uri=True,
-            check_same_thread=False
+                "file:{}?mode=ro".format(database_name),
+                uri=True,
+                check_same_thread=False
         ) as con:
             cur = con.cursor()
             cur.execute("SELECT green FROM green_presenting WHERE url=? LIMIT 1",
@@ -90,33 +91,21 @@ class GreenCheck:
             logger.debug(res)
             return bool(res)
 
-    def check_against_api(self, domain=None):
-        api_server = "https://api.thegreenwebfoundation.org"
+    def check_against_api(self, domain=None):  # pylint: disable=no-self-use
+        """Checks ``domain`` against https://api.thegreenwebfoundation.org API"""
         api_url = "{}/greencheck/{}".format(api_server, domain)
         logger.debug(api_url)
         response = requests.get(api_url).json()
+        return bool(response.get("green"))
 
-        if response.get("green"):
-            return True
+GC = GreenCheck()
 
-greencheck = GreenCheck()
+def post_search(request, search):  # pylint: disable=unused-argument
+    """Filter searx results."""
 
-# attach callback to the post search hook
-#  request: flask request object
-#  ctx: the whole local context of the pre search hook
-
-
-def post_search(request, search):
+    # pylint: disable=protected-access
     green_results = [
-        entry for entry in list(search.result_container._merged_results)
-        if get_green(entry)
+        result for result in list(search.result_container._merged_results)
+        if GC.check_url(result.get('url'))
     ]
     search.result_container._merged_results = green_results
-    return True
-
-
-def get_green(result):
-    logger.debug(result.get('url'))
-    green = greencheck.check_url(result.get('url'))
-    if green:
-        return True
