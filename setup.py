@@ -15,7 +15,7 @@ GIT_URL='https://github.com/return42/tgwf-searx-plugins'
 
 setup(
     name                = 'tgwf-searx-plugins'
-    , version           = '0.1'
+    , version           = '0.2'
     , description       = 'The Green Web Foundation searx plugins'
     , long_description  = __doc__
     , url               =  GIT_URL
@@ -28,7 +28,7 @@ setup(
     , license           = 'GNU Affero General Public License'
     , zip_safe          = False
     , install_requires  = """
-searx @ git+https://github.com/asciimoo/searx
+searx
 flask-babel
 """
     , py_modules        = [
