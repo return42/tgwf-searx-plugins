@@ -29,6 +29,7 @@ setup(
     , zip_safe          = False
     , install_requires  = """
 searx
+requests
 flask-babel
 """
     , py_modules        = [
