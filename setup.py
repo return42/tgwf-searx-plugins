@@ -15,7 +15,7 @@ GIT_URL='https://github.com/return42/tgwf-searx-plugins'
 
 setup(
     name                = 'tgwf-searx-plugins'
-    , version           = '0.2'
+    , version           = '0.3'
     , description       = 'The Green Web Foundation searx plugins'
     , long_description  = __doc__
     , url               =  GIT_URL
@@ -27,16 +27,11 @@ setup(
     }
     , license           = 'GNU Affero General Public License'
     , zip_safe          = False
-    , install_requires  = """
-searx
-requests
-flask-babel
-"""
     , py_modules        = [
         'only_show_green_results'
     ]
     , entry_points      = {
-        'searx.plugins' : [
+        'searxng.plugins' : [
             'tgwf.green-results = only_show_green_results'
         ]
     }
