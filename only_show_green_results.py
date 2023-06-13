@@ -4,14 +4,10 @@
 import os
 import logging
 import sqlite3
-import requests
+from urllib.parse import urlparse
 
 from flask_babel import gettext
-
-try:
-    from urllib.parse import urlparse
-except ImportError:
-    from urlparse import urlparse
+from searx import network
 
 logger = logging.getLogger(__name__)
 
@@ -41,10 +37,10 @@ class GreenCheck:
                 database_name)
             return
 
-        logger.debug("No database found at %s.", database_name)
+        logger.warning("No database found at %s.", database_name)
         if allow_api_connections:
-            logger.debug(
-                "Falling back to the the Greencheck API, as 'allow_api_connections' is set to %s.",
+            logger.warning(
+                "Falling back to the (much slower) Greencheck API, as 'allow_api_connections' is set to %s.",
                 allow_api_connections)
         else:
             logger.debug(
@@ -95,7 +91,7 @@ class GreenCheck:
         """Checks ``domain`` against https://api.thegreenwebfoundation.org API"""
         api_url = "{}/greencheck/{}".format(api_server, domain)
         logger.debug(api_url)
-        response = requests.get(api_url).json()
+        response = network.get(api_url).json()
         return bool(response.get("green"))
 
 GC = GreenCheck()
