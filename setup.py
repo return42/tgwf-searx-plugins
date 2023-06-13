@@ -15,7 +15,7 @@ GIT_URL='https://github.com/return42/tgwf-searx-plugins'
 
 setup(
     name                = 'tgwf-searx-plugins'
-    , version           = '0.3'
+    , version           = '0.4'
     , description       = 'The Green Web Foundation searx plugins'
     , long_description  = __doc__
     , url               =  GIT_URL
