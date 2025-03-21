@@ -1,0 +1,86 @@
+# ==============================================================================
+[build-system]
+# ==============================================================================
+
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+# ==============================================================================
+[project]
+# ==============================================================================
+
+name = "only_show_green_results"
+dynamic = ["version"]
+
+readme = "README.rst"
+requires-python = ">=3.11"
+license = "AGPL-3.0-or-later"
+description = "The Green Web Foundation searx plugins"
+authors = [
+    { name = "The Green Web Foundation", email = "chris@productscience.co.uk" },
+    { name = "SearXNG Community", email = "markus.heiser@darmarit.de" },
+]
+
+dependencies = [
+  "flask_babel",
+]
+
+[project.urls]
+Code = "https://github.com/return42/tgwf-searx-plugins"
+Homepage = "https://github.com/return42/tgwf-searx-plugins"
+"Issue tracker" = "https://github.com/return42/tgwf-searx-plugins/issues"
+
+# ==============================================================================
+[tool.hatch]
+# ==============================================================================
+
+[tool.hatch.version]
+path = "src/only_show_green_results/__init__.py"
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+# [tool.hatch.build.targets.sdist]
+# include = []
+
+# hatch env: default
+# ------------------
+
+[tool.hatch.envs.default]
+python = "3.13"
+dependencies = [
+  "basedpyright==1.27.*",
+  "black==25.1.*",
+  "pylint==3.3.*",
+  "isort==6.0.*",
+]
+
+# FIXME: ..
+post-install-commands = [
+  "python -m pip install --upgrade pip",
+  "python -m pip install setuptools pyyaml",
+  # "python -m pip install git+https://github.com/searxng/searxng.git@master",
+]
+
+[tool.hatch.envs.default.scripts]
+
+fix = [
+  "isort {args:./src}",
+  "black {args:./src}",
+]
+
+check = [
+  "isort --diff {args:./src}",
+  "black --check --diff {args:./src}",
+  "pylint --output-format=parseable {args:./src}",
+  "basedpyright {args:./src}",
+]
+
+# ==============================================================================
+[tool.isort]
+# ==============================================================================
+
+profile = "black"
+atomic = true
+use_parentheses = true
+include_trailing_comma = true
