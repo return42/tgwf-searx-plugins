@@ -2,3 +2,4 @@
 *.pyc
 */*.pyc
 tgwf_searx_plugins.egg-info
+build/
