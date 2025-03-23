@@ -4,7 +4,7 @@
 Only show green hosted results
 ==============================
 
-A `SearXNG plugin <https://docs.searxng.org/dev/plugins.html>`__ to check if a
+A `SearXNG plugin <https://docs.searxng.org/dev/plugins/development.html>`__ to check if a
 domain is part of the `Green WEB <https://www.thegreenwebfoundation.org/>`__.
 
 Installation
